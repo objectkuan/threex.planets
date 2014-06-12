@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html>
+
+<script src='vendor/three.js/build/three.min.js'></script>
+<script src='../threex.planets.js'></script>
+<script src='vendor/planets.js'></script>
+
+<script src="../js/cloudflare/underscore-min.js"></script>
+<script src="../js/cloudflare//jquery.min.js"></script>
+<script src="../js/leap/leap-0.6.0.js"></script>
+
+<body style='margin: 0px; background-color: #000000; overflow: hidden;'>
+<script>
+	var renderer	= new THREE.WebGLRenderer({
+		antialias	: true
+	});
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+	renderer.shadowMapEnabled	= true
+
+	var updateFcts	= [];
+	var scene	= new THREE.Scene();
+	var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100 );
+	camera.position.z = 1.5;
+
+	var light	= new THREE.AmbientLight( 0x888888 )
+	scene.add( light )
+	// var light	= new THREE.DirectionalLight( 'white', 1)
+	// light.position.set(5,5,5)
+	// light.target.position.set( 0, 0, 0 )
+	// scene.add( light )
+
+	var light	= new THREE.DirectionalLight( 0xcccccc, 1 )
+	light.position.set(5,5,5)
+	scene.add( light )
+	light.castShadow	= true
+	light.shadowCameraNear	= 0.01
+	light.shadowCameraFar	= 15
+	light.shadowCameraFov	= 45
+
+	light.shadowCameraLeft	= -1
+	light.shadowCameraRight	=  1
+	light.shadowCameraTop	=  1
+	light.shadowCameraBottom= -1
+	// light.shadowCameraVisible	= true
+
+	light.shadowBias	= 0.001
+	light.shadowDarkness	= 0.2
+
+	light.shadowMapWidth	= 1024*2
+	light.shadowMapHeight	= 1024*2
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		added starfield							//
+	//////////////////////////////////////////////////////////////////////////////////
+	var starSphere	= THREEx.Planets.createStarfield()
+	scene.add(starSphere)
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		added planets							//
+	//////////////////////////////////////////////////////////////////////////////////
+	var meshes = new Array(
+		getSun(),		getMercury(),	getVenus(),		getMoon(),
+		getEarch(),		getMoon(),		getMars(),		getJupiter(),
+		getSaturn(),	getUranus(),	getNeptune(),	getPluto()
+	);
+	for(var i = 0; i < meshes.length; i++) {
+		var mesh = meshes[i]
+		mesh.position.z = -10
+		scene.add(mesh)
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Planets Controls							//
+	//////////////////////////////////////////////////////////////////////////////////
+	var x = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	var y = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	var r = Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+	var theta = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	var w = Array(0.001, 0.012, 0.003, 0.004, 0.011, 0.007, 0.005, 0.008, 0.006, 0.002, 0.010, 0.009);
+	function updatePlanets() {
+		for(var i = 0; i < meshes.length; i++) {
+			var mesh = meshes[i]
+			mesh.position.x = (r[i] + 1) * 3 * Math.cos(theta[i]);
+			mesh.position.y = (r[i] + 1) * 3 * Math.sin(theta[i]);
+			theta[i] += w[i];
+			// mesh.position.x = i * 10
+			// mesh.position.y = 0
+		}
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		Camera Controls							//
+	//////////////////////////////////////////////////////////////////////////////////
+	// var mouse	= {x : 0, y : 0}
+	// document.addEventListener('mousemove', function(event){
+	// 	mouse.x	= (event.clientX / window.innerWidth ) - 0.5
+	// 	mouse.y	= (event.clientY / window.innerHeight) - 0.5
+	// }, false)
+	var mousey = 0;
+	var mousex = 0;
+	function updateCamera(delta, now){
+		// camera.position.x += (mouse.x*5 - camera.position.x) * (delta*3)
+		// camera.position.y += (mouse.y*5 - camera.position.y) * (delta*3)
+		camera.position.y += (mousey * 5 - camera.position.y) * (delta*3)
+		camera.position.x += (mousex * 5 - camera.position.x) * (delta*3)
+		// console.log(mousey);
+		camera.lookAt( scene.position )
+	}
+
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		render the scene						//
+	//////////////////////////////////////////////////////////////////////////////////
+	function render(){
+		renderer.render( scene, camera );		
+	}
+
+	//////////////////////////////////////////////////////////////////////////////////
+	//		loop runner							//
+	//////////////////////////////////////////////////////////////////////////////////
+	var lastTimeMsec = null
+	requestAnimationFrame(function animate(nowMsec){
+		// keep looping
+		requestAnimationFrame( animate );
+		// measure time
+		lastTimeMsec	= lastTimeMsec || nowMsec-1000/60
+		var deltaMsec	= Math.min(200, nowMsec - lastTimeMsec)
+		lastTimeMsec	= nowMsec
+		// call each update function
+		updatePlanets();
+		updateCamera(deltaMsec/1000, nowMsec/1000);
+		render();
+	})
+
+
+
+
+
+	$(document).ready(function() {
+		window.controller = new Leap.Controller({enableGestures: true});
+
+		var swiper = controller.gesture('swipe');
+
+		var tolerance = 50;
+		var cooloff = 300;
+
+		var slider = _.debounce(function(xDir, yDir) {
+			if(yDir < 0) mousey -= 0.15;
+			if(yDir > 0) mousey += 0.15;
+			if(mousey < -0.9) mousey = -0.9;
+			if(mousey > 0.9) mousey = 0.9;
+			// window.alert(mousey);
+		}, cooloff);
+
+		swiper.update(function(g) {
+			if (Math.abs(g.translation()[0]) > tolerance || Math.abs(g.translation()[1]) > tolerance) {
+				var xDir = Math.abs(g.translation()[0]) > tolerance ? (g.translation()[0] > 0 ? -1 : 1) : 0;
+				var yDir = Math.abs(g.translation()[1]) > tolerance ? (g.translation()[1] < 0 ? -1 : 1) : 0;
+				slider(xDir, yDir);
+			}
+		});
+
+		controller.connect();
+	})
+</script>
+</body>
+
+</html>
