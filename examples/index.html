@@ -21,7 +21,7 @@
 	var updateFcts	= [];
 	var scene	= new THREE.Scene();
 	var camera	= new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.01, 100 );
-	camera.position.z = 1.5;
+	camera.position.z = 5;
 
 	var light	= new THREE.AmbientLight( 0x888888 )
 	scene.add( light )
@@ -66,7 +66,7 @@
 	);
 	for(var i = 0; i < meshes.length; i++) {
 		var mesh = meshes[i]
-		mesh.position.z = -10
+		mesh.position.z = -20
 		scene.add(mesh)
 	}
 
@@ -75,14 +75,15 @@
 	//////////////////////////////////////////////////////////////////////////////////
 	var x = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 	var y = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
-	var r = Array(1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
-	var theta = Array(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+	var r = Array(0, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12);
+	var theta = Array(0, 1, 0, -3, 0, -2, 0, -1.3, 0, -3.2, 0, -1.2);
 	var w = Array(0.001, 0.012, 0.003, 0.004, 0.011, 0.007, 0.005, 0.008, 0.006, 0.002, 0.010, 0.009);
 	function updatePlanets() {
 		for(var i = 0; i < meshes.length; i++) {
 			var mesh = meshes[i]
-			mesh.position.x = (r[i] + 1) * 3 * Math.cos(theta[i]);
-			mesh.position.y = (r[i] + 1) * 3 * Math.sin(theta[i]);
+			mesh.position.x = (r[i]) * 3 * Math.cos(theta[i]);
+			mesh.position.y = (r[i]) * 3 * Math.sin(theta[i]);
+			mesh.position.z = -20;
 			theta[i] += w[i];
 			// mesh.position.x = i * 10
 			// mesh.position.y = 0
@@ -137,31 +138,55 @@
 
 
 
+
+
+
 	$(document).ready(function() {
 		window.controller = new Leap.Controller({enableGestures: true});
 
 		var swiper = controller.gesture('swipe');
 
 		var tolerance = 50;
-		var cooloff = 300;
+		var cooloff = 200;
 
-		var slider = _.debounce(function(xDir, yDir) {
-			if(yDir < 0) mousey -= 0.15;
-			if(yDir > 0) mousey += 0.15;
-			if(mousey < -0.9) mousey = -0.9;
-			if(mousey > 0.9) mousey = 0.9;
-			// window.alert(mousey);
-		}, cooloff);
+		// var slider = _.debounce(function(xDir, yDir) {
+		// 	// window.alert(yDir);
+		// 	if(yDir < 0) mousey -= (0.025 * -mousey + 0.15);
+		// 	if(yDir > 0) mousey += (0.025 * mousey + 0.15);
+		// 	if(mousey < -0.9) mousey = -2;
+		// 	if(mousey > 0.9) mousey = 2;
+		// 	// window.alert(mousey);
+		// }, cooloff);
 
-		swiper.update(function(g) {
-			if (Math.abs(g.translation()[0]) > tolerance || Math.abs(g.translation()[1]) > tolerance) {
-				var xDir = Math.abs(g.translation()[0]) > tolerance ? (g.translation()[0] > 0 ? -1 : 1) : 0;
-				var yDir = Math.abs(g.translation()[1]) > tolerance ? (g.translation()[1] < 0 ? -1 : 1) : 0;
-				slider(xDir, yDir);
-			}
-		});
+		// swiper.update(function(g) {
+		// 	if (Math.abs(g.translation()[0]) > tolerance || Math.abs(g.translation()[1]) > tolerance) {
+		// 		var xDir = Math.abs(g.translation()[0]) > tolerance ? (g.translation()[0] > 0 ? -1 : 1) : 0;
+		// 		var yDir = Math.abs(g.translation()[1]) > tolerance ? (g.translation()[1] < 0 ? -1 : 1) : 0;
+		// 		slider(xDir, yDir);
+		// 	}
+		// });
 
 		controller.connect();
+
+		Leap.loop(function(frame) {
+	        var seenFingers = {};
+	        var handIds = {};
+	        if (frame.hands === undefined ) {
+	          	var handsLength = 0
+	        } else {
+	          	var handsLength = frame.hands.length;
+	        }
+
+	        if(handsLength > 0) {	
+	          var hand = frame.hands[0];
+	          var posX = (hand.palmPosition[0]*3);
+	          var posY = (hand.palmPosition[2]*3)-110;
+	          var posZ = (hand.palmPosition[1]*3)-400;
+	          mousey = -posY * 0.005;
+	          mousex = -posX * 0.005;
+	          console.log(posY);
+	        }
+	    });
 	})
 </script>
 </body>
