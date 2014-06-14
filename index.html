@@ -1,34 +1,200 @@
 <!DOCTYPE html>
 <html>
 <head>
+	<script>
+		var mousey = 0;
+		var mousex = 0;
+		var sliden = 6;
+	</script>
 	<!-- JS Base -->
-	<script src="../js/cloudflare/underscore-min.js"></script>
-	<script src="../js/cloudflare//jquery.min.js"></script>
-	<script src="../js/leap/leap-0.6.0.js"></script>
+	<script src="js/cloudflare/underscore-min.js"></script>
+	<script src="js/cloudflare/jquery.min.js"></script>
+	<script src="js/leap/leap-0.6.0.js"></script>
 
 	<!-- Planets -->
-	<script src='../js/threex.js/build/three.min.js'></script>
-	<script src='../js/threex.planets/threex.planets.js'></script>
-	<script src='../js/planets/planets.js'></script>
+	<script src='js/three.js/build/three.min.js'></script>
+	<script src='js/threex.planets/threex.planets.js'></script>
+	<script src='js/planets/planets.js'></script>
+
+	<!-- Stars -->
+	<script src='js/stars/stars.js'></script>
+	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 
 <body style='margin: 0px; background-color: #000000; overflow: hidden;'>
 <script>
 	$(document).ready(function() {
-		startPlanets();
+		/* Initialize the Metrics */
+		var winWidth = window.innerWidth;
+		var winHeight = window.innerHeight;
+		$("[ctype='ctnr']").css("width", winWidth);
+		$("#wrapper").css("width", winWidth * sliden);
 
-		Leap.loop(function(frame) {
-	        if(!(frame.hands === undefined) && frame.hands.length > 0) {
-	          var hand = frame.hands[0];
-	          var posX = (hand.palmPosition[0]*3);
-	          var posY = (hand.palmPosition[2]*3)-110;
-	          var posZ = (hand.palmPosition[1]*3)-400;
-	          mousey = -posY * 0.005;
-	          mousex = posX * 0.005;
-	        }
-	    });
+		startPlanets($("#planet_ctnr"));
+		initStarSky();
+
+		/* Switching Control */
+		var slideCooloff = 300; 
+		var curIndex = 0;
+		var switchTo = _.debounce(function() {
+			$("#wrapper").animate({marginLeft: -(curIndex * winWidth) + 'px'}, slideCooloff);
+		}, slideCooloff);
+
+		/* Judging Left Hand Swiping */
+		var tolerance = 50;
+		var cooloff = 300;
+		var slider = _.debounce(function(xDir, yDir, gesture, frame) {
+			var handIds = gesture.handIds;
+			
+			for (var handId in handIds) {
+				var hand = frame.hands[handId];
+				if (hand && hand.type == "left") {
+					curIndex = curIndex - xDir;
+					curIndex = curIndex < 0 ? 0 : curIndex;
+					curIndex = curIndex > sliden ? sliden : curIndex;
+					switchTo(curIndex);
+				}
+			}
+		}, cooloff);
+		
+		function handleRightSwipe(xDir, yDir, g, f) {
+			if (curIndex == 1) { // Stars
+				if (xDir > 0) { 
+					// window.alert("prev");
+					prevConstellation();
+				} else if(xDir < 0) {
+					// window.alert("next");
+					nextConstellation();
+				}
+			}
+		}
+
+		function handleSwipe(g, f, left) {
+			if (g.type != "swipe") return;
+			g.translation = new Array(3);
+			g.translation[0] = g.startPosition[0] - g.position[0];
+			g.translation[1] = g.startPosition[1] - g.position[1];
+			g.translation[2] = g.startPosition[2] - g.position[2];
+			if (Math.abs(g.translation[0]) > tolerance || Math.abs(g.translation[1]) > tolerance) {
+				var xDir = Math.abs(g.translation[0]) > tolerance ? (g.translation[0] > 0 ? -1 : 1) : 0;
+				var yDir = Math.abs(g.translation[1]) > tolerance ? (g.translation[1] < 0 ? -1 : 1) : 0;
+				if (left) slider(xDir, yDir, g, f);
+				else handleRightSwipe(xDir, yDir, g, f);
+				return true;
+			} 
+			return false;
+		}
+
+		function resetxy() {
+			mousey = mousex = 0;
+		}
+
+		Leap.loop({enableGestures: true}, function(frame) {
+			/* Getting the hands */
+			if (frame.hands === undefined) { resetxy(); return; }
+			if (frame.hands.length < 1) { resetxy(); return; }
+
+			var handAmount = frame.hands.length;
+			if (handAmount > 2)
+				window.alert("Hey, you have too many hands.");
+			
+			var lHand = false, rHand = false;
+			if (frame.hands[0].type == "left" ) lHand = frame.hands[0];
+			if (frame.hands[0].type == "right") rHand = frame.hands[0];
+			if (handAmount == 2) {
+				if (frame.hands[1].type == "left" ) lHand = frame.hands[1];
+				if (frame.hands[1].type == "right") rHand = frame.hands[1];
+			}
+
+
+					// if(xDir < 0) 
+					// 	nextConstellation();
+					// else 
+					// 	prevConstellation();
+
+			/* Right Hand respond to simple motions */
+			if (rHand) {
+				var posX = (rHand.palmPosition[0] * 3);
+				var posY = (rHand.palmPosition[2] * 3) - 110;
+				var posZ = (rHand.palmPosition[1] * 3) - 400;
+				mousey = -posY * 0.005;
+				mousex = posX * 0.005;
+				
+				var first = true;
+				frame.gestures.forEach(
+					function(gesture){
+						if (!first) return;
+						if (handleSwipe(gesture, frame, false)) 
+							first = false;
+				});
+			}
+			/* Left Hand respond to switching */
+			if (lHand) {
+				var first = true;
+				frame.gestures.forEach(
+					function(gesture){
+						if (!first) return;
+						if (handleSwipe(gesture, frame, true)) 
+							first = false;
+				});
+			}
+		});
+
+		curIndex = 0;
+		switchTo(curIndex);
 	})
 </script>
+	<div id="main_ctnr" class="main_container">
+		<div id="wrapper" class="container_wrapper">
+			<div id="planet_ctnr" ctype="ctnr" class="container" style="background-color: red"></div>
+			<div id="stars_ctnr" ctype="ctnr" class="container" style="background-color: yellow; overflow: hidden;">
+				<div id="star_sky" style="position: relative; width: 2772px; height: 1152px; background: url(images/stars/bg.png);">
+					<div ctype="cons_pic" cdata="1" style="position: absolute; width: 10000px; margin-left: 1038px; margin-top: 35px;">
+						<img src="images/stars/pics/1l.png" style="float: left"/>
+						<img src="images/stars/pics/1.png" style="float: left; margin-left: -720px;"/>
+					</div>
+					<div ctype="cons_pic" cdata="2" style="position: absolute; width: 10000px; margin-left: 1017px; margin-top: 560px;">
+						<img src="images/stars/pics/2l.png" style="float: left"/>
+						<img src="images/stars/pics/2.png" style="float: left; margin-left: -710px;"/>
+					</div>
+					<div ctype="cons_pic" cdata="3" style="position: absolute; width: 10000px; margin-left: 1875px; margin-top: 686px;">
+						<img src="images/stars/pics/3l.png" style="float: left"/>
+						<img src="images/stars/pics/3.png" style="float: left; margin-left: -158px;"/>
+					</div>
+					<div ctype="cons_pic" cdata="4" style="position: absolute; width: 10000px; margin-left: 1863px; margin-top: 219px;">
+						<img src="images/stars/pics/4l.png" style="float: left"/>
+						<img src="images/stars/pics/4.png" style="float: left; margin-left: -477px;"/>
+					</div>
+					<div ctype="cons_pic" cdata="5" style="position: absolute; width: 10000px; margin-left: 1791px; margin-top: 632px;">
+						<img src="images/stars/pics/5l.png" style="float: left"/>
+						<img src="images/stars/pics/5.png" style="float: left; margin-left: -802px;"/>
+					</div>
+					<div ctype="cons_pic" cdata="6" style="position: absolute; width: 10000px; margin-left: 1621px; margin-top: 817px;">
+						<img src="images/stars/pics/6l.png" style="float: left"/>
+						<img src="images/stars/pics/6.png" style="float: left; margin-left: -244px;"/>
+					</div>
+					<div ctype="cons_pic" cdata="7" style="position: absolute; width: 10000px; margin-left: 154px; margin-top: 85px;">
+						<img src="images/stars/pics/7l.png" style="float: left"/>
+						<img src="images/stars/pics/7.png" style="float: left; margin-left: -745px;"/>
+					</div>
+					<div ctype="cons_pic" cdata="8" style="position: absolute; width: 10000px; margin-left: 169px; margin-top: 531px;">
+						<img src="images/stars/pics/8l.png" style="float: left"/>
+						<img src="images/stars/pics/8.png" style="float: left; margin-left: -910px;"/>
+					</div>
+					<div ctype="cons_pic" cdata="9" style="position: absolute; width: 10000px; margin-left: 715px; margin-top: 314px;">
+						<img src="images/stars/pics/9l.png" style="float: left"/>
+						<img src="images/stars/pics/9.png" style="float: left; margin-left: -249px;"/>
+					</div>
+				</div>
+			</div>
+			<div id="map_ctnr" ctype="ctnr" class="container" style="background-color: green"></div>
+			<div id="trace_ctnr" ctype="ctnr" class="container" style="background-color: blue"></div>
+			<div id="outdoor_ctnr" ctype="ctnr" class="container" style="background-color: white"></div>
+			<div id="pic_ctnr" ctype="ctnr" class="container" style="background-color: grey"></div>
+			<div class="cb"> </div>
+		</div>
+	</div>
+	<div class="cb"> </div>
 </body>
 
 </html>

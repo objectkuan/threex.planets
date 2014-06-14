@@ -148,8 +148,6 @@ function updatePlanets() {
 }
 
 /* Camera Controls */
-var mousey = 0;
-var mousex = 0;
 function updateCamera(delta, now){
 	camera.position.y += (mousey * 5 - camera.position.y) * (delta * 3)
 	camera.position.x += (mousex * 5 - camera.position.x) * (delta * 3)
@@ -171,6 +169,7 @@ requestAnimationFrame(function animate(nowMsec){
 	renderer.render( scene, camera );
 })
 
-function startPlanets() {
-	document.body.appendChild( renderer.domElement );
+function startPlanets(parent) {
+	parent.append(renderer.domElement);
+	// document.body.appendChild( renderer.domElement );
 }
