@@ -169,7 +169,7 @@ requestAnimationFrame(function animate(nowMsec){
 	renderer.render( scene, camera );
 })
 
-function startPlanets(parent) {
+function initPlanets(parent) {
 	parent.append(renderer.domElement);
 	// document.body.appendChild( renderer.domElement );
 }

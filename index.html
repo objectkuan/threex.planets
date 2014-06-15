@@ -18,6 +18,9 @@
 
 	<!-- Stars -->
 	<script src='js/stars/stars.js'></script>
+
+	<!-- Stars -->
+	<script src='js/map/map.js'></script>
 	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 
@@ -30,8 +33,9 @@
 		$("[ctype='ctnr']").css("width", winWidth);
 		$("#wrapper").css("width", winWidth * sliden);
 
-		startPlanets($("#planet_ctnr"));
+		initPlanets($("#planet_ctnr"));
 		initStarSky();
+		initMap(winWidth, winHeight);
 
 		/* Switching Control */
 		var slideCooloff = 300; 
@@ -52,20 +56,29 @@
 					curIndex = curIndex - xDir;
 					curIndex = curIndex < 0 ? 0 : curIndex;
 					curIndex = curIndex > sliden ? sliden : curIndex;
+					hookBeforeSlide(curIndex);
 					switchTo(curIndex);
 				}
 			}
 		}, cooloff);
+
+		function hookBeforeSlide(curIndex) {
+			if(curIndex == 2) {
+				stopMapAt0();
+			}
+		}
 		
 		function handleRightSwipe(xDir, yDir, g, f) {
 			if (curIndex == 1) { // Stars
 				if (xDir > 0) { 
-					// window.alert("prev");
 					prevConstellation();
 				} else if(xDir < 0) {
-					// window.alert("next");
 					nextConstellation();
 				}
+			} else if (curIndex == 2) {
+				slideMap();
+			} else if (curIndex == 3) {
+
 			}
 		}
 
@@ -106,12 +119,6 @@
 				if (frame.hands[1].type == "right") rHand = frame.hands[1];
 			}
 
-
-					// if(xDir < 0) 
-					// 	nextConstellation();
-					// else 
-					// 	prevConstellation();
-
 			/* Right Hand respond to simple motions */
 			if (rHand) {
 				var posX = (rHand.palmPosition[0] * 3);
@@ -147,6 +154,7 @@
 	<div id="main_ctnr" class="main_container">
 		<div id="wrapper" class="container_wrapper">
 			<div id="planet_ctnr" ctype="ctnr" class="container" style="background-color: red"></div>
+
 			<div id="stars_ctnr" ctype="ctnr" class="container" style="background-color: yellow; overflow: hidden;">
 				<div id="star_sky" style="position: relative; width: 2772px; height: 1152px; background: url(images/stars/bg.png);">
 					<div ctype="cons_pic" cdata="1" style="position: absolute; width: 10000px; margin-left: 1038px; margin-top: 35px;">
@@ -187,8 +195,15 @@
 					</div>
 				</div>
 			</div>
-			<div id="map_ctnr" ctype="ctnr" class="container" style="background-color: green"></div>
-			<div id="trace_ctnr" ctype="ctnr" class="container" style="background-color: blue"></div>
+
+			<div id="map_ctnr" ctype="ctnr" class="container" style="background-color: black">
+				<video id="map_video" src="videos/map.mp4"></video>
+			</div>
+
+			<div id="catch_ctnr" ctype="ctnr" class="container" style="background-color: blue">
+
+			</div>
+
 			<div id="outdoor_ctnr" ctype="ctnr" class="container" style="background-color: white"></div>
 			<div id="pic_ctnr" ctype="ctnr" class="container" style="background-color: grey"></div>
 			<div class="cb"> </div>
