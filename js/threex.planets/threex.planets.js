@@ -7,7 +7,7 @@ THREEx.Planets.baseURL	= '../'
 // from http://planetpixelemporium.com/
 
 THREEx.Planets.createSun	= function(){
-	var geometry	= new THREE.SphereGeometry(2.5, 32, 32)
+	var geometry	= new THREE.SphereGeometry(3, 32, 32)
 	var texture	= THREE.ImageUtils.loadTexture(THREEx.Planets.baseURL+'images/sunmap.jpg')
 	var material	= new THREE.MeshPhongMaterial({
 		map	: texture,

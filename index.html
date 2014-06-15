@@ -4,12 +4,14 @@
 	<script>
 		var mousey = 0;
 		var mousex = 0;
-		var sliden = 6;
+		var sliden = 5;
+		var grabStrength = 0;
+		var palmZ = 0;
 	</script>
 	<!-- JS Base -->
 	<script src="js/cloudflare/underscore-min.js"></script>
 	<script src="js/cloudflare/jquery.min.js"></script>
-	<script src="js/leap/leap-0.6.0.js"></script>
+	<script src="js/leap/leap-0.6.0.min.js"></script>
 
 	<!-- Planets -->
 	<script src='js/three.js/build/three.min.js'></script>
@@ -21,11 +23,18 @@
 
 	<!-- Stars -->
 	<script src='js/map/map.js'></script>
+
+	<!-- Catch -->
+	<script src='js/catch/catch.js'></script>
+
+	<!-- Outdoor -->
+	<script src='js/outdoor/outdoor.js'></script>
 	<link rel="stylesheet" type="text/css" href="css/style.css">
 </head>
 
 <body style='margin: 0px; background-color: #000000; overflow: hidden;'>
 <script>
+
 	$(document).ready(function() {
 		/* Initialize the Metrics */
 		var winWidth = window.innerWidth;
@@ -36,6 +45,8 @@
 		initPlanets($("#planet_ctnr"));
 		initStarSky();
 		initMap(winWidth, winHeight);
+		initCatch(winWidth, winHeight);
+		initOutdoor(winWidth, winHeight);
 
 		/* Switching Control */
 		var slideCooloff = 300; 
@@ -55,7 +66,7 @@
 				if (hand && hand.type == "left") {
 					curIndex = curIndex - xDir;
 					curIndex = curIndex < 0 ? 0 : curIndex;
-					curIndex = curIndex > sliden ? sliden : curIndex;
+					curIndex = curIndex >= sliden ? sliden - 1 : curIndex;
 					hookBeforeSlide(curIndex);
 					switchTo(curIndex);
 				}
@@ -65,25 +76,31 @@
 		function hookBeforeSlide(curIndex) {
 			if(curIndex == 2) {
 				stopMapAt0();
+			} else if (curIndex == 3) {
+				onEnterCatch();
+			}
+		}
+
+		function handleGrab(hand) {
+			if (curIndex == 3) {
+				grabThat();
 			}
 		}
 		
 		function handleRightSwipe(xDir, yDir, g, f) {
-			if (curIndex == 1) { // Stars
-				if (xDir > 0) { 
+			if (curIndex == 0) { // Stars
+				if (xDir < 0) { 
 					prevConstellation();
-				} else if(xDir < 0) {
+				} else if(xDir > 0) {
 					nextConstellation();
 				}
 			} else if (curIndex == 2) {
 				slideMap();
-			} else if (curIndex == 3) {
-
-			}
+			} 
 		}
 
 		function handleSwipe(g, f, left) {
-			if (g.type != "swipe") return;
+			if (g.type != "swipe") return false;
 			g.translation = new Array(3);
 			g.translation[0] = g.startPosition[0] - g.position[0];
 			g.translation[1] = g.startPosition[1] - g.position[1];
@@ -96,6 +113,11 @@
 				return true;
 			} 
 			return false;
+		}
+		function handleTap(f) {
+			if(curIndex == 4) {
+				tabOutdoor();
+			}
 		}
 
 		function resetxy() {
@@ -127,35 +149,46 @@
 				mousey = -posY * 0.005;
 				mousex = posX * 0.005;
 				
-				var first = true;
+				var gesFirst = true;
 				frame.gestures.forEach(
 					function(gesture){
-						if (!first) return;
-						if (handleSwipe(gesture, frame, false)) 
-							first = false;
-				});
+						if (gesFirst)
+							if (handleSwipe(gesture, frame, false)) 
+								gesFirst = false;
+					}
+				);
+
+				if(rHand.grabStrength > 0.5 && grabStrength < 0.5) 
+					handleGrab(rHand);
+				grabStrength = rHand.grabStrength;
+
+				// console.log(posZ);
+				if(palmZ - posZ > 50) 
+					handleTap(rHand);
+				palmZ = posZ;
 			}
+
 			/* Left Hand respond to switching */
 			if (lHand) {
-				var first = true;
+				var swipeFirst = true;
 				frame.gestures.forEach(
 					function(gesture){
-						if (!first) return;
-						if (handleSwipe(gesture, frame, true)) 
-							first = false;
-				});
+						if (swipeFirst)
+							if (handleSwipe(gesture, frame, true)) 
+								swipeFirst = false;
+					}
+				);
 			}
 		});
-
+      
 		curIndex = 0;
 		switchTo(curIndex);
-	})
+	});
 </script>
 	<div id="main_ctnr" class="main_container">
 		<div id="wrapper" class="container_wrapper">
-			<div id="planet_ctnr" ctype="ctnr" class="container" style="background-color: red"></div>
 
-			<div id="stars_ctnr" ctype="ctnr" class="container" style="background-color: yellow; overflow: hidden;">
+			<div id="stars_ctnr" ctype="ctnr" class="container" style="overflow: hidden;">
 				<div id="star_sky" style="position: relative; width: 2772px; height: 1152px; background: url(images/stars/bg.png);">
 					<div ctype="cons_pic" cdata="1" style="position: absolute; width: 10000px; margin-left: 1038px; margin-top: 35px;">
 						<img src="images/stars/pics/1l.png" style="float: left"/>
@@ -196,16 +229,37 @@
 				</div>
 			</div>
 
+			<div id="planet_ctnr" ctype="ctnr" class="container" ></div>
+
 			<div id="map_ctnr" ctype="ctnr" class="container" style="background-color: black">
 				<video id="map_video" src="videos/map.mp4"></video>
 			</div>
 
-			<div id="catch_ctnr" ctype="ctnr" class="container" style="background-color: blue">
-
+			<div id="catch_ctnr" ctype="ctnr" class="container" style="position: relative; background-color: white">
+				<div style="background: url(images/catch/bg.png);">
+					<canvas id="catchCanvas"> </canvas>
+					<img src="images/catch/framework.png" id="catch_frame" style="position: absolute; top: 0; left: 50%; margin-left: -333px"/>
+				</div>
 			</div>
 
-			<div id="outdoor_ctnr" ctype="ctnr" class="container" style="background-color: white"></div>
-			<div id="pic_ctnr" ctype="ctnr" class="container" style="background-color: grey"></div>
+			<div id="outdoor_ctnr" ctype="ctnr" class="container" style="position: relative;">
+				<div>
+					<img src="images/outdoor/0index.png" ctype="outdoor_pic" cdata="0" style="position: absolute; left: 0; top: 0;"/>
+					<div>
+						<img src="images/outdoor/index/11.png" id="outdoorIndexItem11" width="463px" height="88px" style="display: block; position: absolute; left: 50%; margin-left: -231px; top: 150px;"/>
+						<img src="images/outdoor/index/21.png" id="outdoorIndexItem21" width="463px" height="88px" style="display: block; position: absolute; left: 50%; margin-left: -231px; top: 300px;"/>
+						<img src="images/outdoor/index/31.png" id="outdoorIndexItem31" width="463px" height="88px" style="display: block; position: absolute; left: 50%; margin-left: -231px; top: 450px;"/>
+						<img src="images/outdoor/index/12.png" id="outdoorIndexItem12" width="463px" height="88px" style="display: none; position: absolute; left: 50%; margin-left: -231px; top: 150px;"/>
+						<img src="images/outdoor/index/22.png" id="outdoorIndexItem22" width="463px" height="88px" style="display: none; position: absolute; left: 50%; margin-left: -231px; top: 300px;"/>
+						<img src="images/outdoor/index/32.png" id="outdoorIndexItem32" width="463px" height="88px" style="display: none; position: absolute; left: 50%; margin-left: -231px; top: 450px;"/>
+					</div>
+ 					<img src="images/outdoor/1save.png"  ctype="outdoor_pic" cdata="1" style="position: absolute; left: 0; top: 0;"/>
+					<img src="images/outdoor/2risk.png"  ctype="outdoor_pic" cdata="2" style="position: absolute; left: 0; top: 0;"/>
+					<img src="images/outdoor/3rec.png"   ctype="outdoor_pic" cdata="3" style="position: absolute; left: 0; top: 0;"/>
+					<img src="images/outdoor/hand0.png" id="outdoorTarget" style="position: absolute; left: 0; top: 0;"/>
+				</div>
+			</div>
+
 			<div class="cb"> </div>
 		</div>
 	</div>
