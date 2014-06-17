@@ -66,7 +66,7 @@
 				if (hand && hand.type == "left") {
 					curIndex = curIndex - xDir;
 					curIndex = curIndex < 0 ? 0 : curIndex;
-					curIndex = curIndex >= sliden ? sliden - 1 : curIndex;
+					curIndex = curIndex >= sliden ? 0 : curIndex;
 					hookBeforeSlide(curIndex);
 					switchTo(curIndex);
 				}
@@ -74,7 +74,9 @@
 		}, cooloff);
 
 		function hookBeforeSlide(curIndex) {
-			if(curIndex == 2) {
+			if (curIndex == 0) {
+				onEnterStarSky();
+			} else if (curIndex == 2) {
 				stopMapAt0();
 			} else if (curIndex == 3) {
 				onEnterCatch();
@@ -188,7 +190,7 @@
 	<div id="main_ctnr" class="main_container">
 		<div id="wrapper" class="container_wrapper">
 
-			<div id="stars_ctnr" ctype="ctnr" class="container" style="overflow: hidden;">
+			<div id="stars_ctnr" ctype="ctnr" class="container" style="position: relative;overflow: hidden;">
 				<div id="star_sky" style="position: relative; width: 2772px; height: 1152px; background: url(images/stars/bg.png);">
 					<div ctype="cons_pic" cdata="1" style="position: absolute; width: 10000px; margin-left: 1038px; margin-top: 35px;">
 						<img src="images/stars/pics/1l.png" style="float: left"/>
@@ -227,12 +229,16 @@
 						<img src="images/stars/pics/9.png" style="float: left; margin-left: -249px;"/>
 					</div>
 				</div>
+				<img src="images/icons/index0.png" width="160px" height="200px" style="position: absolute; left: 10px; bottom: 180px"/>
 			</div>
 
-			<div id="planet_ctnr" ctype="ctnr" class="container" ></div>
+			<div id="planet_ctnr" ctype="ctnr" class="container" style="position: relative;" >
+				<img src="images/icons/index0.png" width="160px" height="200px" style="position: absolute; left: 10px; bottom: 180px"/>
+			</div>
 
-			<div id="map_ctnr" ctype="ctnr" class="container" style="background-color: black">
+			<div id="map_ctnr" ctype="ctnr" class="container" style="position: relative; background-color: black">
 				<video id="map_video" src="videos/map.mp4"></video>
+				<img src="images/icons/index1.png" width="160px" height="200px" style="position: absolute; left: 10px; bottom: 180px"/>
 			</div>
 
 			<div id="catch_ctnr" ctype="ctnr" class="container" style="position: relative; background-color: white">
@@ -240,6 +246,7 @@
 					<canvas id="catchCanvas"> </canvas>
 					<img src="images/catch/framework.png" id="catch_frame" style="position: absolute; top: 0; left: 50%; margin-left: -333px"/>
 				</div>
+				<img src="images/icons/index2.png" width="160px" height="200px" style="position: absolute; left: 10px; bottom: 180px"/>
 			</div>
 
 			<div id="outdoor_ctnr" ctype="ctnr" class="container" style="position: relative;">
@@ -258,6 +265,7 @@
 					<img src="images/outdoor/3rec.png"   ctype="outdoor_pic" cdata="3" style="position: absolute; left: 0; top: 0;"/>
 					<img src="images/outdoor/hand0.png" id="outdoorTarget" style="position: absolute; left: 0; top: 0;"/>
 				</div>
+				<img src="images/icons/index3.png" width="160px" height="200px" style="position: absolute; left: 10px; bottom: 180px"/>
 			</div>
 
 			<div class="cb"> </div>

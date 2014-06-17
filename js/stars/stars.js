@@ -3,6 +3,22 @@ var stars_xs = Array( -800, -800, -1400, -1500, -1500, -1100,     0,     0,  -20
 var stars_ys = Array(    0, -450,  -450,  -100,  -500,  -500,     0,  -500,     0);
 
 function initStarSky() {
+	// $("#star_sky").css("marginLeft", stars_xs[0]);
+	// $("#star_sky").css("marginTop",  stars_ys[0]);
+	// var col = $("[ctype='cons_pic']");
+	// col.each(
+	// 	function(index) {
+	// 		var c = $(col[index]);
+	// 		$(c.children()[0]).css("opacity", 0);
+	// 		$(c.children()[1]).css("opacity", 0);
+	// 	}
+	// );
+	// consIndex = -1;
+	onEnterStarSky();
+	// switchToConstellation(consIndex);
+}
+
+function onEnterStarSky() {
 	$("#star_sky").css("marginLeft", stars_xs[0]);
 	$("#star_sky").css("marginTop",  stars_ys[0]);
 	var col = $("[ctype='cons_pic']");
@@ -14,7 +30,6 @@ function initStarSky() {
 		}
 	);
 	consIndex = -1;
-	// switchToConstellation(consIndex);
 }
 
 var constelCooloff = 500;
