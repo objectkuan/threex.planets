@@ -1,7 +1,8 @@
 # makefile to automatize simple operations
 
 server:
-	python -m SimpleHTTPServer
+#	python -m SimpleHTTPServer
+	http-server -p 1234
 
 deploy:
 	# assume there is something to commit
